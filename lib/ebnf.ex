@@ -136,6 +136,45 @@ defmodule EBNF do
     group_alternates(rest, alternates, [factor | current_group])
   end
 
+  defp times(factor, times) do
+    1..times//1
+    |> Enum.map(fn _i -> factor end)
+  end
+
+  defp expand_repetition(factor, {:times, [t]}, ids, name) do
+
+    rule = if t > 0 do
+      times(factor, t)
+    else
+      {:empty, []}
+    end
+
+
+    next_symbol_id = map_size(ids)
+    next_rule_name = "#{name}_#{next_symbol_id}"
+    ids = Map.put(ids, next_rule_name, next_symbol_id)
+
+    {next_rule_name, traverse_rule({:rule, [{:identifier, [next_rule_name]} | rule ]}, ids, name)}
+  end
+
+  defp expand_repetition(factor, {:from_to, [from, to]}, ids, name) when from <= to do
+
+    from_rules = if from > 0 do
+      times(factor, from)
+    else
+      [{:empty, []}]
+    end
+    to_rules = from+1..to//1
+    |> Enum.reduce([], fn e,acc -> times(factor,e) ++ ["|" | acc] end)
+    next_symbol_id = map_size(ids)
+    next_rule_name = "#{name}_#{next_symbol_id}"
+    ids = Map.put(ids, next_rule_name, next_symbol_id)
+
+    rule = [alternate: to_rules ++ from_rules]
+
+    {next_rule_name, traverse_rule({:rule, [{:identifier, [next_rule_name]} | rule ]}, ids, name)}
+  end
+
   defp expand_repetition(factor, rep, ids, name) do
     next_symbol_id = map_size(ids)
     next_rule_name = "#{name}_#{next_symbol_id}"

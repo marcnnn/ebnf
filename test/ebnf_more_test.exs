@@ -840,10 +840,19 @@ space ::= | " " | "\n" [ \t]{0,20}
 assert [_ | _] = parsed
     end
 
-    test "space" do
+    test "tab" do
 
 	grammar = """
 root ::= [\t]{0,20}
+"""
+	assert {:ok, parsed, "", _, _, _} = EBNF.parse(grammar)
+assert [_ | _] = parsed
+    end
+
+    test "two tab" do
+
+	grammar = """
+root ::= [\t]{2}
 """
 	assert {:ok, parsed, "", _, _, _} = EBNF.parse(grammar)
 assert [_ | _] = parsed
@@ -858,6 +867,48 @@ root ::= [^\"\\\d\0-\x1F]
 assert [_ | _] = parsed
     end
 
+  end
+
+  describe "expand/1" do
+
+    test "tab{1,3}" do
+
+	grammar = """
+root ::= [\t]{1,3}
+"""
+assert %ParseState{
+         symbol_ids: symbol,
+         grammar_encoding: encoded
+       } = EBNF.encode(grammar)
+assert [1, 10, 2, 9, 9, 2, 9, 9, 2, 9, 9, 0, 7, 2, 9, 9, 2, 9, 9, 0, 4, 2, 9, 9, 0, 0, 0, 3, 1, 1, 0, 0, 65535] = encoded
+assert %{"root" => 0, "root_1" => 1} = symbol
+    end
+
+    test "tab{0,3}" do
+
+	grammar = """
+root ::= [\t]{0,3}
+"""
+assert %ParseState{
+         symbol_ids: symbol,
+         grammar_encoding: encoded
+       } = EBNF.encode(grammar)
+assert [1, 10, 2, 9, 9, 2, 9, 9, 2, 9, 9, 0, 7, 2, 9, 9, 2, 9, 9, 0, 4, 2, 9, 9, 0, 1, 0, 0, 0, 3, 1, 1, 0, 0, 65535] = encoded
+assert %{"root" => 0, "root_1" => 1} = symbol
+    end
+
+    test "tab{2}" do
+
+	grammar = """
+root ::= [\t]{2}
+"""
+assert %ParseState{
+         symbol_ids: symbol,
+         grammar_encoding: encoded
+       } = EBNF.encode(grammar)
+assert [1, 7, 2, 9, 9, 2, 9, 9, 0, 0, 0, 3, 1, 1, 0, 0, 65535] = encoded
+assert %{"root" => 0, "root_1" => 1} = symbol
+    end
   end
 
 end
